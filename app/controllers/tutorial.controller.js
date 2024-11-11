@@ -73,25 +73,50 @@ exports.findAllPublished = (req, res) => {
 // Update a Tutorial identified by the id in the request
 exports.update = (req, res) => {
   if (!req.body) {
-    res.status(400).send({
-      message: "Content can not be empty!",
+    return res.status(400).send({
+      message: "Content cannot be empty!",
     });
   }
 
-  // console.log(req.body);
-
-  Tutorial.updateById(req.params.id, new Tutorial(req.body), (err, data) => {
+  Tutorial.findById(req.params.id, (err, data) => {
     if (err) {
       if (err.kind === "not_found") {
-        res.status(404).send({
+        return res.status(404).send({
           message: `Not found Tutorial with id ${req.params.id}.`,
         });
       } else {
-        res.status(500).send({
-          message: "Error updating Tutorial with id " + req.params.id,
+        return res.status(500).send({
+          message: "Error retrieving Tutorial with id " + req.params.id,
         });
       }
-    } else res.send(data);
+    }
+
+    const tutorialData = {
+      title: req.body.title || data.title,
+      description: req.body.description || data.description,
+      published:
+        req.body.published !== undefined ? req.body.published : data.published,
+    };
+
+    Tutorial.updateById(
+      req.params.id,
+      new Tutorial(tutorialData),
+      (err, updatedData) => {
+        if (err) {
+          if (err.kind === "not_found") {
+            return res.status(404).send({
+              message: `Not found Tutorial with id ${req.params.id}.`,
+            });
+          } else {
+            return res.status(500).send({
+              message: "Error updating Tutorial with id " + req.params.id,
+            });
+          }
+        } else {
+          res.send(updatedData);
+        }
+      }
+    );
   });
 };
 
