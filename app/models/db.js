@@ -1,7 +1,6 @@
-const mysql = require("mysql");
-const dbConfig = require("../config/db.config");
+import mysql from "mysql";
+import dbConfig from "../config/db.config.js";
 
-// Create a connection to the database
 const connection = mysql.createConnection({
   host: dbConfig.HOST,
   user: dbConfig.USER,
@@ -9,7 +8,6 @@ const connection = mysql.createConnection({
   database: dbConfig.DB,
 });
 
-// open the MySQL connection
 connection.connect((error) => {
   if (error) {
     console.error("Error connecting to the database:", error);
@@ -17,15 +15,14 @@ connection.connect((error) => {
   }
   console.log("Successfully connected to the database.");
 
-  // Optionally create the tutorials table if it doesn't exist
   const createTutorialTable = `
-      CREATE TABLE IF NOT EXISTS tutorials (
-        id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description VARCHAR(255),
-        published BOOLEAN DEFAULT false
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-    `;
+    CREATE TABLE IF NOT EXISTS tutorials (
+      id INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      description VARCHAR(255),
+      published BOOLEAN DEFAULT false
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `;
 
   connection.query(createTutorialTable, (err, result) => {
     if (err) {
@@ -36,5 +33,4 @@ connection.connect((error) => {
   });
 });
 
-// Export the connection for use in other modules
-module.exports = connection;
+export default connection;

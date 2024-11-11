@@ -1,5 +1,6 @@
-const express = require("express");
-const cors = require("cors");
+import express from "express";
+import cors from "cors";
+import tutorialRoutes from "./app/routes/tutorial.routes.js";
 
 const app = express();
 
@@ -17,7 +18,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to Enigmatic application." });
 });
 
-require("./app/routes/tutorial.routes.js")(app);
+tutorialRoutes(app);
 
 const PORT = process.env.PORT || 8000;
 

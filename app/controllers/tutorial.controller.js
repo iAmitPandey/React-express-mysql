@@ -1,150 +1,185 @@
-const Tutorial = require("../models/tutorial.model.js");
+import Tutorial from "../models/tutorial.model.js";
 
 // Create and Save a new Tutorial
-exports.create = (req, res) => {
-  // Validate request
-  if (!req.body) {
-    res.status(400).send({
-      message: "Content can not be empty!",
+export const create = async (req, res) => {
+  try {
+    // Validate request
+    if (!req.body) {
+      return res.status(400).send({ message: "Content cannot be empty!" });
+    }
+
+    // Create a new Tutorial instance
+    const tutorial = new Tutorial({
+      title: req.body.title,
+      description: req.body.description,
+      published: req.body.published || false,
+    });
+
+    // Save Tutorial in the database
+    const data = await new Promise((resolve, reject) => {
+      Tutorial.create(tutorial, (err, data) => {
+        if (err) return reject(err);
+        resolve(data);
+      });
+    });
+
+    res.send(data);
+  } catch (error) {
+    res.status(500).send({
+      message:
+        error.message || "Some error occurred while creating the Tutorial.",
     });
   }
-
-  // Create a Tutorial
-  const tutorial = new Tutorial({
-    title: req.body.title,
-    description: req.body.description,
-    published: req.body.published || false,
-  });
-
-  // Save Tutorial in the database
-  Tutorial.create(tutorial, (err, data) => {
-    if (err)
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while creating the Tutorial.",
-      });
-    else res.send(data);
-  });
 };
 
 // Retrieve all Tutorials from the database (with condition).
-exports.findAll = (req, res) => {
-  const title = req.query.title;
-
-  Tutorial.getAll(title, (err, data) => {
-    if (err)
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving tutorials.",
+export const findAll = async (req, res) => {
+  try {
+    const title = req.query.title || "";
+    const data = await new Promise((resolve, reject) => {
+      Tutorial.getAll(title, (err, data) => {
+        if (err) return reject(err);
+        resolve(data);
       });
-    else res.send(data);
-  });
-};
+    });
 
-// Find a single Tutorial with a id
-exports.findOne = (req, res) => {
-  Tutorial.findById(req.params.id, (err, data) => {
-    if (err) {
-      if (err.kind === "not_found") {
-        res.status(404).send({
-          message: `Not found Tutorial with id ${req.params.id}.`,
-        });
-      } else {
-        res.status(500).send({
-          message: "Error retrieving Tutorial with id " + req.params.id,
-        });
-      }
-    } else res.send(data);
-  });
-};
-
-// find all published Tutorials
-exports.findAllPublished = (req, res) => {
-  Tutorial.getAllPublished((err, data) => {
-    if (err)
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while retrieving tutorials.",
-      });
-    else res.send(data);
-  });
-};
-
-// Update a Tutorial identified by the id in the request
-exports.update = (req, res) => {
-  if (!req.body) {
-    return res.status(400).send({
-      message: "Content cannot be empty!",
+    res.send(data);
+  } catch (error) {
+    res.status(500).send({
+      message:
+        error.message || "Some error occurred while retrieving tutorials.",
     });
   }
+};
 
-  Tutorial.findById(req.params.id, (err, data) => {
-    if (err) {
-      if (err.kind === "not_found") {
-        return res.status(404).send({
-          message: `Not found Tutorial with id ${req.params.id}.`,
-        });
-      } else {
-        return res.status(500).send({
-          message: "Error retrieving Tutorial with id " + req.params.id,
-        });
-      }
+// Find a single Tutorial by ID
+export const findOne = async (req, res) => {
+  try {
+    const data = await new Promise((resolve, reject) => {
+      Tutorial.findById(req.params.id, (err, data) => {
+        if (err) return reject(err);
+        resolve(data);
+      });
+    });
+
+    res.send(data);
+  } catch (error) {
+    if (error.kind === "not_found") {
+      res
+        .status(404)
+        .send({ message: `Not found Tutorial with id ${req.params.id}.` });
+    } else {
+      res.status(500).send({
+        message: "Error retrieving Tutorial with id " + req.params.id,
+      });
+    }
+  }
+};
+
+// Retrieve all published Tutorials
+export const findAllPublished = async (req, res) => {
+  try {
+    const data = await new Promise((resolve, reject) => {
+      Tutorial.getAllPublished((err, data) => {
+        if (err) return reject(err);
+        resolve(data);
+      });
+    });
+
+    res.send(data);
+  } catch (error) {
+    res.status(500).send({
+      message:
+        error.message || "Some error occurred while retrieving tutorials.",
+    });
+  }
+};
+
+// Update a Tutorial by ID
+export const update = async (req, res) => {
+  try {
+    if (!req.body) {
+      return res.status(400).send({ message: "Content cannot be empty!" });
     }
 
-    const tutorialData = {
+    const data = await new Promise((resolve, reject) => {
+      Tutorial.findById(req.params.id, (err, existingTutorial) => {
+        if (err) return reject(err);
+        resolve(existingTutorial);
+      });
+    });
+
+    const updatedTutorial = {
       title: req.body.title || data.title,
       description: req.body.description || data.description,
       published:
         req.body.published !== undefined ? req.body.published : data.published,
     };
 
-    Tutorial.updateById(
-      req.params.id,
-      new Tutorial(tutorialData),
-      (err, updatedData) => {
-        if (err) {
-          if (err.kind === "not_found") {
-            return res.status(404).send({
-              message: `Not found Tutorial with id ${req.params.id}.`,
-            });
-          } else {
-            return res.status(500).send({
-              message: "Error updating Tutorial with id " + req.params.id,
-            });
-          }
-        } else {
-          res.send(updatedData);
+    const result = await new Promise((resolve, reject) => {
+      Tutorial.updateById(
+        req.params.id,
+        updatedTutorial,
+        (err, updatedData) => {
+          if (err) return reject(err);
+          resolve(updatedData);
         }
-      }
-    );
-  });
+      );
+    });
+
+    res.send(result);
+  } catch (error) {
+    if (error.kind === "not_found") {
+      res
+        .status(404)
+        .send({ message: `Not found Tutorial with id ${req.params.id}.` });
+    } else {
+      res
+        .status(500)
+        .send({ message: "Error updating Tutorial with id " + req.params.id });
+    }
+  }
 };
 
-// Delete a Tutorial with the specified id in the request
-exports.delete = (req, res) => {
-  Tutorial.remove(req.params.id, (err, data) => {
-    if (err) {
-      if (err.kind === "not_found") {
-        res.status(404).send({
-          message: `Not found Tutorial with id ${req.params.id}.`,
-        });
-      } else {
-        res.status(500).send({
-          message: "Could not delete Tutorial with id " + req.params.id,
-        });
-      }
-    } else res.send({ message: `Tutorial was deleted successfully!` });
-  });
-};
-
-// Delete all Tutorials from the database.
-exports.deleteAll = (req, res) => {
-  Tutorial.removeAll((err, data) => {
-    if (err)
-      res.status(500).send({
-        message:
-          err.message || "Some error occurred while removing all tutorials.",
+// Delete a Tutorial by ID
+export const deleteTutorial = async (req, res) => {
+  try {
+    const result = await new Promise((resolve, reject) => {
+      Tutorial.remove(req.params.id, (err, data) => {
+        if (err) return reject(err);
+        resolve(data);
       });
-    else res.send({ message: `All Tutorials were deleted successfully!` });
-  });
+    });
+
+    res.send({ message: "Tutorial was deleted successfully!" });
+  } catch (error) {
+    if (error.kind === "not_found") {
+      res
+        .status(404)
+        .send({ message: `Not found Tutorial with id ${req.params.id}.` });
+    } else {
+      res.status(500).send({
+        message: "Could not delete Tutorial with id " + req.params.id,
+      });
+    }
+  }
+};
+
+// Delete all Tutorials
+export const deleteAll = async (req, res) => {
+  try {
+    await new Promise((resolve, reject) => {
+      Tutorial.removeAll((err, data) => {
+        if (err) return reject(err);
+        resolve(data);
+      });
+    });
+
+    res.send({ message: "All Tutorials were deleted successfully!" });
+  } catch (error) {
+    res.status(500).send({
+      message:
+        error.message || "Some error occurred while removing all tutorials.",
+    });
+  }
 };
